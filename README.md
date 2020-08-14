@@ -762,8 +762,8 @@ It doesn't come from 'https://www.Sycsecret.com'
 つまり、X-Forwared-Forとは通常サーバにアクセスするまでにproxyなどを経由した場合、送信元IPアドレスが書き換えられてしまうが書き換えれるたびに今までの送信元IPアドレスをメモしておくヘッダである。
 
 これを書き換えることでlocalhostから自分のパソコンをproxyとして経由してSecret.phpにアクセスしてるように偽装することができる。多分。
-
+```
 % curl -i http://node3.buuoj.cn:29595/Secret.php -H "referer: https://www.Sycsecret.com" -H "x-forwarded-for:localhost" -A "Syclover"
-
+```
 flag{784392dc-e1db-411a-b5a6-989fc4a2c0d9}
 
