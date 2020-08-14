@@ -2,6 +2,8 @@
 過去に出題されたCTFのweb問を解いていきます。write upというよりメモなのでめちゃくちゃ適当です。
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+- [[强网杯 2019]随便注](#%E5%BC%BA%E7%BD%91%E6%9D%AF-2019%E9%9A%8F%E4%BE%BF%E6%B3%A8)
 - [[HCTF 2018]WarmUp](#hctf-2018warmup)
 - [[强网杯 2019]随便注](#%E5%BC%BA%E7%BD%91%E6%9D%AF-2019%E9%9A%8F%E4%BE%BF%E6%B3%A8)
 - [[SUCTF 2019]EasySQL](#suctf-2019easysql)
@@ -15,6 +17,8 @@
 - [[HCTF 2018]admin](#hctf-2018admin)
 - [[GXYCTF2019]Ping Ping Ping](#gxyctf2019ping-ping-ping)
 - [[极客大挑战 2019]PHP](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019php)
+- [[ACTF2020 新生赛]Exec](#actf2020-%E6%96%B0%E7%94%9F%E8%B5%9Bexec)
+- [[极客大挑战 2019]Http](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019http)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
