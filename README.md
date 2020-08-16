@@ -24,7 +24,7 @@
 - [[极客大挑战 2019]Upload](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019upload)
 - [[ACTF2020 新生赛]BackupFile](#actf2020-%E6%96%B0%E7%94%9F%E8%B5%9Bbackupfile)
 - [[ACTF2020 新生赛]Upload](#actf2020-%E6%96%B0%E7%94%9F%E8%B5%9Bupload)
-- [【[极客大挑战 2019]BuyFlag】8/15](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019buyflag815)
+- [[极客大挑战 2019]BuyFlag](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019buyflag)
 - [[网鼎杯 2018]Fakebook](#%E7%BD%91%E9%BC%8E%E6%9D%AF-2018fakebook)
 - [[ZJCTF 2019]NiZhuanSiWei](#zjctf-2019nizhuansiwei)
 
