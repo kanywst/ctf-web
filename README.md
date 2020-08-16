@@ -1025,7 +1025,7 @@ GIF89a
 GIF89a flag{3447f2f2-fc30-43f3-a4e9-a8188e79ba2a} 
 ```
 
-# 【[极客大挑战 2019]BuyFlag】8/15
+# [极客大挑战 2019]BuyFlag
 
 /pay.phpに
 ```
